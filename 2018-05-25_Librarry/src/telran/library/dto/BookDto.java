@@ -7,19 +7,21 @@ public class BookDto {
 	public long isbn;
 	public String title;
 	public int amount;
-	public List<String> authorsName;
+	public List<String> authorNames;
 	public Cover cover;
 	public int pickPeriod;
 	
+
 	public BookDto() {}
 
-	public BookDto(long isbn, int amount, String title,  Cover cover, int pickPeriod,  List<String> authorsName) {
+	public BookDto(long isbn, int amount, String title,  Cover cover, int pickPeriod,  List<String> authorNames) {
 		this.isbn = isbn;
 		this.title = title;
 		this.amount = amount;
-		this.authorsName = authorsName;
+		this.authorNames = authorNames;
 		this.cover = cover;
 		this.pickPeriod = pickPeriod;
+		
 	}
 
 	public long getIsbn() {
@@ -34,8 +36,8 @@ public class BookDto {
 		return amount;
 	}
 
-	public List<String> getAuthorsName() {
-		return authorsName;
+	public List<String> getAuthorNames() {
+		return authorNames;
 	}
 
 	public Cover getCover() {
@@ -48,7 +50,7 @@ public class BookDto {
 
 	@Override
 	public String toString() {
-		return "BookDto [isbn=" + isbn + ", title=" + title + ", amount=" + amount + ", authorsName=" + authorsName
+		return "BookDto [isbn=" + isbn + ", title=" + title + ", amount=" + amount + ", authorNames=" + authorNames
 				+ ", cover=" + cover + ", pickPeriod=" + pickPeriod + "]";
 	}
 	

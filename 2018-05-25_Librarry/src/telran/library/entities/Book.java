@@ -15,12 +15,14 @@ public class Book {
 	String title;
 	@Enumerated(EnumType.STRING)
 	Cover cover;
+	
 	int pickPeriod;
 	@ManyToMany
 	List<Author> authors;
+	@OneToMany(mappedBy="book")
+	List<Record> records;
 	
-	public Book() {
-	}
+	public Book() {}
 
 	public Book(long isbn, int amount, String title, Cover cover, int pickPeriod, List<Author> authors) {
 		this.isbn = isbn;
@@ -30,6 +32,7 @@ public class Book {
 		this.pickPeriod = pickPeriod;
 		this.authors = authors;
 	}
+
 
 	public int getAmount() {
 		return amount;
@@ -63,6 +66,8 @@ public class Book {
 		return authors;
 	}
 	
-	
+	public List<Record> getRecords() {
+		return records;
+	}
 	
 }
