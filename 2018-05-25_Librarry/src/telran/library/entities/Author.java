@@ -3,6 +3,8 @@ import java.util.List;
 
 import javax.persistence.*;
 
+import telran.library.dto.AuthorDto;
+
 @Table(name="authors")
 @Entity
 public class Author {
@@ -17,6 +19,10 @@ public class Author {
 	public Author(String name, String country) {
 		this.name = name;
 		this.country = country;
+	}
+	
+	public AuthorDto getAuthor() {
+		return new AuthorDto(name, country);
 	}
 
 	public String getName() {

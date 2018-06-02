@@ -2,6 +2,7 @@ package telran.library.model;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,11 +41,14 @@ public class LibraryOrm implements ILibrary {
 	@Override
 	@Transactional
 	public LibraryReturnCode addBook(BookDto book) {
-		if (books.existsById(book.getIsbn()))
+		if (books.existsById(book.isbn)){
 			return LibraryReturnCode.BOOK_ALREADY_EXISTS;
-		if (!checkAutors(book.getAuthorNames()))
+		}
+		
+		if(!checkAutors(book.getAuthorNames())) {
 			return LibraryReturnCode.NO_AUTHOR;
-		Book bookOrm = new Book(book.isbn, book.amount, book.title, book.cover, book.pickPeriod,
+		}
+		Book bookOrm= new Book(book.isbn, book.amount, book.title, book.cover, book.pickPeriod, 
 				getAuthorsNameForBook(book.getAuthorNames()));
 		books.save(bookOrm);
 		return LibraryReturnCode.OK;
@@ -65,14 +69,14 @@ public class LibraryOrm implements ILibrary {
 	@Override
 	@Transactional
 	public LibraryReturnCode pickBook(PickBookData pickBook) {
-		if (readers.existsById(pickBook.getReaderId())) {
+		if (!readers.existsById(pickBook.getReaderId())) {
 			return LibraryReturnCode.NO_READER;
 		}
-		if (books.existsById(pickBook.getIsbn())) {
+		if (!books.existsById(pickBook.getIsbn())) {
 			return LibraryReturnCode.NO_BOOK;
 		}
 
-		LocalDate pickDate = getPickDateOrm(pickBook.getPickDate());
+		LocalDate pickDate = getDateOrm(pickBook.getPickDate());
 		if (pickDate == null) {
 			return LibraryReturnCode.WRONG_DATA_fORMAT;
 		}
@@ -101,7 +105,7 @@ public class LibraryOrm implements ILibrary {
 		return quantityBook.getQuantityBook();
 	}
 
-	private LocalDate getPickDateOrm(String pickDate) {
+	private LocalDate getDateOrm(String pickDate) {
 		try {
 			return LocalDate.parse(pickDate, DateTimeFormatter.ofPattern(DATE_FORMAT));
 		} catch (Exception e) {
@@ -118,6 +122,44 @@ public class LibraryOrm implements ILibrary {
 		Reader readerOrm = new Reader(reader.getId(), reader.getName(), reader.getYear(), reader.getPhone());
 		readers.save(readerOrm);
 		return LibraryReturnCode.OK;
+	}
+
+	@Override
+	@Transactional
+	public LibraryReturnCode returnBook(ReturnBookData returnBookDate) {
+	//	List<Record> recordsOrm=records.findByBookIsbnAndReturnDateNull(isbn);
+		Record recordReturnOrm=records.findByBookIsbnAndReaderIdAndReturnDateNull(returnBookDate.getIsbn(),returnBookDate.getReaderId());
+		if(recordReturnOrm==null) {
+			return LibraryReturnCode.NO_RECORD_FOR_RETURN;
+		}
+		LocalDate returnDate=getDateOrm(returnBookDate.getReturnData());
+		recordReturnOrm.setReturnDate(returnDate);
+		
+		int useDaysBook=(int) ChronoUnit.DAYS.between(recordReturnOrm.getPickDate(), returnDate);
+		int pickPeriodBook=books.findById(returnBookDate.getIsbn()).get().getPickPeriod();
+		if (pickPeriodBook< useDaysBook) {
+			recordReturnOrm.setDelayDays(useDaysBook-pickPeriodBook);
+		}
+		
+		return LibraryReturnCode.OK;
+	}
+
+	@Override
+	public List<ReaderDto> getReadersDelayingBooks() {
+		
+		return null;
+	}
+
+	@Override
+	public List<AuthorDto> getBookAuthors(long isbn) {
+		List<Author>authorNamesBook=books.findById(isbn).get().getAuthors();
+		return authorNamesBook.stream().map(x->x.getAuthor()).collect(Collectors.toList());
+	}
+
+	@Override
+	public List<BookDto> getAuthorBooks(String authorName) {
+		List<Book> authorBooks=books.findByAuthors(authorName);
+		return authorBooks.stream().map(x->x.getBook()).collect(Collectors.toList());
 	}
 
 }

@@ -10,7 +10,7 @@ public class Record {
 int id;
 
 LocalDate pickDate;
-LocalDate returnData;
+LocalDate returnDate;
 int delayDays;
 
 @ManyToOne
@@ -42,7 +42,7 @@ public LocalDate getPickDate() {
 }
 
 public LocalDate getReturnData() {
-	return returnData;
+	return returnDate;
 }
 
 public int getDelayDays() {
@@ -51,6 +51,18 @@ public int getDelayDays() {
 
 public Reader getReader() {
 	return reader;
+}
+
+public LocalDate getReturnDate() {
+	return returnDate;
+}
+
+public void setReturnDate(LocalDate returnDate) {
+	this.returnDate = returnDate;
+}
+
+public void setDelayDays(int delayDays) {
+	this.delayDays = delayDays;
 }
 
 }
