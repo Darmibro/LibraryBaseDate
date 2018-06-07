@@ -24,9 +24,9 @@ public interface RecordRepository extends JpaRepository<Record, Integer>{
 			+ "where year between :from and :to group by book_title"
 			+ "order by count(*) desc limit 1", nativeQuery=true)
 	long getMaxCountBook(@Param ("from") int from, @Param("to")int to);
-@Query("select book from Record where reader.year "
-		+ "between :from and :to group by book having count(*)=:count")
-	List<Book> getBookPopular(@Param("from")int from, @Param("to")int to, @Param("count")long count);
+@Query("select book.isbn from Record where reader.year "
+		+ "between :from and :to group by book.isbn having count(*)=:count")
+	List<Long> getBookPopular(@Param("from")int from, @Param("to")int to, @Param("count")long count);
 @Query(value="select count(*) from records reader_id"
 		+ "group by reader_id order by count(*) desc limit 1", nativeQuery=true)
 	long getMaxCountActiveReaders();

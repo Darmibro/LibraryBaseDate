@@ -189,8 +189,8 @@ Stream<Book> booksPeriod=records.findByReturnDateNull().map(x->x.getBook()).dist
 	@Override
 	public List<BookDto> getMostPopularBooks(int fromYear, int toYear) {
 		long maxCount=records.getMaxCountBook(fromYear, toYear);
-		List<Book> res=records.getBookPopular(fromYear, toYear, maxCount);
-		return null;
+		List<Long> res=records.getBookPopular(fromYear, toYear, maxCount);
+		return books.findAllById(res).stream().map(x->x.getBook()).collect(Collectors.toList());
 	}
 
 	@Override
