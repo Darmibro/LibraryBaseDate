@@ -4,6 +4,8 @@ import java.util.List;
 
 import javax.persistence.*;
 
+import telran.library.dto.ReaderDto;
+
 @Table(name="readers")
 @Entity
 public class Reader {
@@ -25,6 +27,9 @@ public class Reader {
 		this.phone = phone;
 	}
 
+	public ReaderDto getReaderDto() {
+		return new ReaderDto(id, name, year, phone);
+	}
 	public String getName() {
 		return name;
 	}

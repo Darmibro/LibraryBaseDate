@@ -13,4 +13,6 @@ LibraryReturnCode returnBook(ReturnBookData returnBookDate);
 List<ReaderDto> getReadersDelayingBooks(); //readers  delaying  books
 List<AuthorDto> getBookAuthors(long isbn);//authors  of  a  given  book
 List<BookDto> getAuthorBooks(String authorName); //books  written  by  agiven  author
+List <BookDto> getMostPopularBooks(int fromYear, int toYear);
+List<ReaderDto> getMostActiveReaders();
 }

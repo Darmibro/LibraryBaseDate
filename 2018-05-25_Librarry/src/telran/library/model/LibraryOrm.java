@@ -5,6 +5,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -41,16 +42,17 @@ public class LibraryOrm implements ILibrary {
 	@Override
 	@Transactional
 	public LibraryReturnCode addBook(BookDto book) {
-		if (books.existsById(book.isbn)){
+		if (books.existsById(book.isbn)) {
 			return LibraryReturnCode.BOOK_ALREADY_EXISTS;
 		}
-		
-		if(!checkAutors(book.getAuthorNames())) {
+
+		if (!checkAutors(book.getAuthorNames())) {
 			return LibraryReturnCode.NO_AUTHOR;
 		}
-		Book bookOrm= new Book(book.isbn, book.amount, book.title, book.cover, book.pickPeriod, 
+		Book bookOrm = new Book(book.isbn, book.amount, book.title, book.cover, book.pickPeriod,
 				getAuthorsNameForBook(book.getAuthorNames()));
 		books.save(bookOrm);
+
 		return LibraryReturnCode.OK;
 	}
 
@@ -86,13 +88,22 @@ public class LibraryOrm implements ILibrary {
 			return LibraryReturnCode.ALL_BOOKS_IN_USE;
 		}
 
+		if (getReturnDateNullInRecords(pickBook.getIsbn(), pickBook.getReaderId()) == null) {
+			return LibraryReturnCode.READER_NO_RETURNSD_BOOK;
+		}
+
 		Record recordOrm = new Record(pickDate, readers.findById(pickBook.getReaderId()).get(), bookOrm);
 		records.save(recordOrm);
-
-		QuantityBook qBook = quantitys.findById(bookOrm.getIsbn()).get();
+		
+ if(quantitys.existsById(bookOrm.getIsbn())) {
+	 QuantityBook qBook=quantitys.findById(bookOrm.getIsbn()).get();
+			 qBook.setQuantityBook(qBook.getQuantityBook()-1);
+ }
+ else {
+	 QuantityBook qBook= new QuantityBook(bookOrm.getIsbn(), bookOrm.getAmount());
 		qBook.setQuantityBook(getCountBookOrm(bookOrm) - 1);
-		quantitys.save(qBook);
-
+ 	quantitys.save(qBook);
+ }
 		return LibraryReturnCode.OK;
 	}
 
@@ -127,39 +138,66 @@ public class LibraryOrm implements ILibrary {
 	@Override
 	@Transactional
 	public LibraryReturnCode returnBook(ReturnBookData returnBookDate) {
-	//	List<Record> recordsOrm=records.findByBookIsbnAndReturnDateNull(isbn);
-		Record recordReturnOrm=records.findByBookIsbnAndReaderIdAndReturnDateNull(returnBookDate.getIsbn(),returnBookDate.getReaderId());
-		if(recordReturnOrm==null) {
+		// List<Record> recordsOrm=records.findByBookIsbnAndReturnDateNull(isbn);
+		Record recordReturnOrm = getReturnDateNullInRecords(returnBookDate.getIsbn(), returnBookDate.getReaderId());
+		if (recordReturnOrm == null) {
 			return LibraryReturnCode.NO_RECORD_FOR_RETURN;
 		}
-		LocalDate returnDate=getDateOrm(returnBookDate.getReturnData());
+		LocalDate returnDate = getDateOrm(returnBookDate.getReturnData());
 		recordReturnOrm.setReturnDate(returnDate);
-		
-		int useDaysBook=(int) ChronoUnit.DAYS.between(recordReturnOrm.getPickDate(), returnDate);
-		int pickPeriodBook=books.findById(returnBookDate.getIsbn()).get().getPickPeriod();
-		if (pickPeriodBook< useDaysBook) {
-			recordReturnOrm.setDelayDays(useDaysBook-pickPeriodBook);
+
+		int usedDaysBook = (int) ChronoUnit.DAYS.between(recordReturnOrm.getPickDate(), returnDate);
+		int pickPeriodBook = books.findById(returnBookDate.getIsbn()).get().getPickPeriod();
+		if (pickPeriodBook < usedDaysBook) {
+			recordReturnOrm.setDelayDays(usedDaysBook - pickPeriodBook);
 		}
-		
+QuantityBook qbook=quantitys.findById(returnBookDate.getIsbn()).get();
+qbook.setQuantityBook(qbook.getQuantityBook()+1);
 		return LibraryReturnCode.OK;
+	}
+
+	private Record getReturnDateNullInRecords(long isbn, int readerId) {
+		return records.findByBookIsbnAndReaderIdAndReturnDateNull(isbn, readerId);
 	}
 
 	@Override
 	public List<ReaderDto> getReadersDelayingBooks() {
-		
+LocalDate dateCurrent=LocalDate.now();
+Stream<Book> booksPeriod=records.findByReturnDateNull().map(x->x.getBook()).distinct();
+//Stream <Reader> readersDelay=booksPeriod.flatMap(x->x.findByBookIsbAndReturnDateNull);
 		return null;
 	}
 
 	@Override
 	public List<AuthorDto> getBookAuthors(long isbn) {
-		List<Author>authorNamesBook=books.findById(isbn).get().getAuthors();
-		return authorNamesBook.stream().map(x->x.getAuthor()).collect(Collectors.toList());
+		if(!books.existsById(isbn)) {
+			throw new NullPointerException();
+		}
+		List<Author> authorNamesBook = books.findById(isbn).get().getAuthors();
+		return authorNamesBook.stream().map(x -> x.getAuthor()).collect(Collectors.toList());
 	}
 
 	@Override
 	public List<BookDto> getAuthorBooks(String authorName) {
-		List<Book> authorBooks=books.findByAuthors(authorName);
-		return authorBooks.stream().map(x->x.getBook()).collect(Collectors.toList());
+		if (!authors.existsById(authorName)) {
+			throw new NullPointerException();
+		}
+		List<Book> authorBooks = books.findByAuthors(authorName);
+		return authorBooks.stream().map(x -> x.getBook()).collect(Collectors.toList());
+	}
+
+	@Override
+	public List<BookDto> getMostPopularBooks(int fromYear, int toYear) {
+		long maxCount=records.getMaxCountBook(fromYear, toYear);
+		List<Book> res=records.getBookPopular(fromYear, toYear, maxCount);
+		return null;
+	}
+
+	@Override
+	public List<ReaderDto> getMostActiveReaders() {
+		long maxCount=records.getMaxCountActiveReaders();
+		List<Reader> res=records.getActiveReaders(maxCount);
+		return res.stream().map(x->x.getReaderDto()).collect(Collectors.toList());
 	}
 
 }
